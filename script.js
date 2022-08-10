@@ -1,37 +1,108 @@
-function $$(selector) {
-    let elements = document.querySelectorAll(selector)
-    return { elements, selector }
-}
-$$().__proto__.html = function(innerHTML) {
-    
-    this.elements.forEach(el=>{
-        el.innerHTML = innerHTML
-    })
-}
-$$().__proto__.hide = function() {
-
-    this.elements.forEach((el)=>{
-        el.style.display = 'none'
-    })
-}
-$$().__proto__.on = function(eventType, cb) {
-    this.elements.forEach((el)=>{
-        el.addEventListener(eventType, cb)
-    })
-}
-$$().__proto__.show = function(){
-    this.elements.forEach((el)=>{
-        el.style.display = ''
-    })
-}
-$$.__proto__.ajax = async function(obj){
-    try {
-        let results = await fetch(obj.url)
-        obj.success(results)
-    } catch (e) {
-        console.log(e)
+class customJquery {
+    constructor(selector){
+        if (selector === document || selector === window){
+            this.elements = [selector]
+        } else {
+            this.elements = document.querySelectorAll(selector)
+        }
+    }
+    static ajax({url, success}) {
+        return fetch(url).then((res)=>res.json())
+        .then(success)
+    }
+    html(innerHTML){
+        this.elements.forEach((el)=> {
+            el.innerHTML = innerHTML
+        })
+    }
+    hide(){
+        console.log(this.elements)
+        this.elements.forEach((el)=>{
+            el.style.display = 'none'
+        })
+    }
+    on(eventType, cb){
+        this.elements.forEach((el)=>{
+            el.addEventListener(eventType, cb)
+        })
+    }
+    show(){
+        this.elements.forEach((el)=>{
+            el.style.display = ''
+        })
+    }
+    addClass(className) {
+        let classNames
+        if (typeof className === 'string') {
+            classNames = className.split(' ')
+        } else if(className instanceof Array){
+            classNames = className
+        }
+        this.elements.forEach((el)=>{
+            classNames.forEach((itemClassName) => {
+                el.classList.add(itemClassName)
+            })
+        })
+    }
+    removeClass(className) {
+        let classNames
+        if (typeof className === 'string') {
+            classNames = className.split(' ')
+        } else if(className instanceof Array){
+            classNames = className
+        }
+        this.elements.forEach((el)=>{
+            classNames.forEach((itemClassName) => {
+                el.classList.remove(itemClassName)
+            })
+        })
+    }
+    toggleClass(className, bool){
+        let classNames
+        if (typeof className === 'string') {
+            classNames = className.split(' ')
+        } else if(className instanceof Array){
+            classNames = className
+        }
+        if (bool === undefined) {
+            this.elements.forEach(el => {
+                classNames.forEach((itemClassName)=> {
+                    if (el.classList.contains(itemClassName)) {
+                        this.removeClass(itemClassName)
+                    } else {
+                        this.addClass(itemClassName)
+                    }
+                })
+            })
+        } else if (bool === true){
+            this.elements.forEach(el => {
+                classNames.forEach((itemClassName)=> {
+                    this.addClass(itemClassName)
+                })    
+            }) 
+        } else if (bool === false){
+            this.elements.forEach(el => {
+                classNames.forEach((itemClassName)=> {
+                    this.removeClass(itemClassName)
+                })
+            })
+        }
+    }
+    unwrap(string) {
+        this.elements.forEach((el)=>{
+            if(el.parentNode === document.querySelector(string)) {
+                el.parentNode.replaceWith(...el.parentNode.childNodes)
+            } else if (string === undefined && el.parentNode) {
+                el.parentNode.replaceWith(...el.parentNode.childNodes)
+            }
+        })
     }
 }
+
+const $$ = (selector) => {
+    return new customJquery(selector)
+}    
+$$.ajax = customJquery.ajax
 
 // Tests
 $$('button.continue').html('Next Step...')
@@ -50,3 +121,10 @@ $$.ajax({
 const btns = $$('button.continue')
 const btns2 = $$('button.continue')
 console.log(btns.html === btns2.html)
+// $$('.blue').removeClass('square blue')
+$$('#squareId').removeClass(['square', 'blue'])
+$$('#squareId').addClass(['square', 'blue'])
+$$('#squareId').on('click', () => {
+    $$('#squareId').toggleClass('blue')
+})
+$$('#pContent').unwrap('#pContainer')
